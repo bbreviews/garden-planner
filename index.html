@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Simple Life — Garden Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+
+  :root {
+    --cream: #faf7f2;
+    --parchment: #f0ead8;
+    --sage: #7a9e7e;
+    --sage-dark: #4e7254;
+    --sage-deeper: #2f4d35;
+    --soil: #7a5c3a;
+    --soil-light: #c4a882;
+    --harvest: #c8762a;
+    --harvest-light: #f0c97a;
+    --sky: #6a9ab5;
+    --red-warn: #b94444;
+    --text: #2a2218;
+    --text-muted: #7a6e5e;
+    --border: #ddd5c0;
+    --border-light: #ede8db;
+    --white: #ffffff;
+    --shadow: 0 2px 12px rgba(42,34,24,0.08);
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    background: var(--sage-deeper);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 3px solid var(--harvest);
+  }
+  .app-header h1 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--cream);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .app-header span {
+    font-size: 12px;
+    color: var(--soil-light);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .header-spacer { flex: 1; }
+
+  /* ── Layout ── */
+  .app-body {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: calc(100vh - 57px);
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-section {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+  }
+  .sidebar-section:last-child { border-bottom: none; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  /* Frost */
+  .zip-row { display: flex; gap: 6px; }
+  .zip-row input {
+    flex: 1; padding: 7px 9px; border: 1px solid var(--border);
+    border-radius: 6px; font-family: var(--font-body); font-size: 13px;
+    background: var(--cream); color: var(--text);
+  }
+  .zip-row input:focus { outline: none; border-color: var(--sage); }
+  .zip-btn {
+    padding: 7px 12px; background: var(--sage-deeper); color: var(--cream);
+    border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+    font-family: var(--font-body); font-weight: 500; white-space: nowrap;
+  }
+  .zip-btn:hover { background: var(--sage-dark); }
+
+  .frost-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; margin-top: 8px;
+  }
+  .frost-cell {
+    background: var(--parchment); border-radius: 6px;
+    padding: 7px 9px; text-align: center;
+  }
+  .frost-cell .fc-label { font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 2px; }
+  .frost-cell .fc-val { font-size: 13px; font-weight: 600; color: var(--sage-deeper); }
+  .frost-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+
+  /* Bed manager */
+  .bed-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; max-height: 130px; overflow-y: auto; }
+  .bed-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 8px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border-light); background: var(--cream);
+    font-size: 12px; transition: all 0.15s;
+  }
+  .bed-item.active { background: var(--sage-deeper); color: var(--cream); border-color: var(--sage-deeper); }
+  .bed-item .bed-icon { font-size: 14px; }
+  .bed-item .bed-name { flex: 1; font-weight: 500; }
+  .bed-item .bed-type { font-size: 10px; opacity: 0.7; }
+  .bed-item .del-bed { margin-left: auto; opacity: 0.5; cursor: pointer; font-size: 13px; }
+  .bed-item .del-bed:hover { opacity: 1; color: var(--red-warn); }
+
+  .add-bed-row { display: flex; gap: 5px; }
+  .add-bed-row input, .add-bed-row select {
+    font-family: var(--font-body); font-size: 12px;
+    padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--cream); color: var(--text);
+  }
+  .add-bed-row input { flex: 1; }
+  .add-bed-row input:focus, .add-bed-row select:focus { outline: none; border-color: var(--sage); }
+  .add-bed-btn {
+    padding: 5px 10px; background: var(--sage); color: white;
+    border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .add-bed-btn:hover { background: var(--sage-dark); }
+
+  /* Plant library */
+  .plant-search-wrap { margin-bottom: 8px; }
+  .plant-search-wrap input {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--border);
+    border-radius: 6px; font-family: var(--font-body); font-size: 13px;
+    background: var(--cream); color: var(--text);
+  }
+  .plant-search-wrap input:focus { outline: none; border-color: var(--sage); }
+
+  .plant-categories { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 7px; }
+  .cat-chip {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--cream);
+    cursor: pointer; color: var(--text-muted); transition: all 0.12s;
+  }
+  .cat-chip.active { background: var(--sage-deeper); color: var(--cream); border-color: var(--sage-deeper); }
+
+  .plant-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 5px; overflow-y: auto; flex: 1; padding-bottom: 10px;
+  }
+  .plant-chip {
+    background: var(--cream); border: 1px solid var(--border-light);
+    border-radius: 7px; padding: 7px 5px;
+    cursor: grab; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; text-align: center;
+    transition: all 0.12s; user-select: none;
+  }
+  .plant-chip:hover { border-color: var(--sage); background: var(--white); transform: translateY(-1px); }
+  .plant-chip.selected { border-color: var(--sage-deeper); background: #e8f0e9; box-shadow: 0 0 0 2px var(--sage-deeper); }
+  .plant-chip .p-emoji { font-size: 20px; line-height: 1; }
+  .plant-chip .p-name { font-size: 10px; color: var(--text); font-weight: 500; line-height: 1.2; }
+  .plant-chip .p-sqft { font-size: 9px; color: var(--text-muted); }
+
+  /* ── Main panel ── */
+  .main-panel {
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex; align-items: center; gap: 0;
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 0 16px; flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 11px 16px; font-size: 13px; font-weight: 500;
+    border: none; background: none; cursor: pointer;
+    color: var(--text-muted); border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.12s; font-family: var(--font-body);
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--sage-deeper); border-bottom-color: var(--sage-deeper); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; background: var(--parchment);
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0;
+  }
+  .toolbar label { font-size: 12px; color: var(--text-muted); }
+  .toolbar input[type=number], .toolbar select {
+    font-family: var(--font-body); font-size: 12px;
+    padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--white); color: var(--text); width: 54px;
+  }
+  .t-spacer { flex: 1; }
+  .t-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 11px; font-size: 12px; font-family: var(--font-body);
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--white); color: var(--text); cursor: pointer; font-weight: 500;
+    transition: all 0.12s;
+  }
+  .t-btn:hover { background: var(--cream); border-color: var(--soil-light); }
+  .t-btn.primary { background: var(--sage-deeper); color: var(--cream); border-color: var(--sage-deeper); }
+  .t-btn.primary:hover { background: var(--sage-dark); }
+  .t-btn.danger { color: var(--red-warn); border-color: #e8b0b0; }
+  .t-btn.danger:hover { background: #fdf0f0; }
+
+  /* Grid area */
+  .grid-area {
+    flex: 1; overflow: auto; padding: 16px;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 51px, var(--border-light) 51px, var(--border-light) 52px
+    ),
+    repeating-linear-gradient(
+      90deg, transparent, transparent 51px, var(--border-light) 51px, var(--border-light) 52px
+    );
+  }
+  .bed-label-banner {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px; padding: 8px 14px;
+    background: var(--sage-deeper); color: var(--cream);
+    border-radius: 8px; font-family: var(--font-display);
+    font-size: 15px; font-weight: 500; width: fit-content;
+  }
+  .bed-label-banner .bed-type-badge {
+    font-family: var(--font-body); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px;
+  }
+
+  .garden-grid { display: inline-grid; gap: 3px; }
+
+  .cell {
+    width: 54px; height: 54px; border: 1px dashed var(--border);
+    border-radius: 5px; background: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; font-size: 10px; cursor: pointer;
+    position: relative; transition: all 0.1s; overflow: hidden;
+  }
+  .cell:hover { border-color: var(--sage); background: var(--white); }
+  .cell.drag-over { border: 2px dashed var(--sage); background: #e8f0e9; }
+  .cell.occupied { border-style: solid; border-color: var(--border); background: var(--white); }
+  .cell-emoji { font-size: 24px; line-height: 1; }
+  .cell-name { font-size: 8.5px; color: var(--text-muted); text-align: center; line-height: 1.1; margin-top: 1px; }
+  .cell-warn {
+    position: absolute; top: 2px; right: 3px;
+    font-size: 9px; color: var(--harvest); cursor: help;
+  }
+  .cell-note-dot {
+    position: absolute; bottom: 2px; left: 3px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--sky); display: none;
+  }
+  .cell-clear {
+    position: absolute; top: 1px; left: 2px;
+    font-size: 10px; color: var(--text-muted); display: none;
+    cursor: pointer; line-height: 1; background: rgba(255,255,255,0.8);
+    border-radius: 3px; padding: 0 2px;
+  }
+  .cell:hover .cell-clear { display: block; }
+
+  /* Note modal */
+  .note-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(42,34,24,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .note-overlay.open { display: flex; }
+  .note-modal {
+    background: var(--white); border-radius: 12px;
+    padding: 22px 24px; width: 320px; box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .note-modal h3 {
+    font-family: var(--font-display); font-size: 18px;
+    color: var(--sage-deeper); margin-bottom: 12px;
+  }
+  .note-modal textarea {
+    width: 100%; height: 100px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font-body); font-size: 13px;
+    color: var(--text); background: var(--cream);
+    resize: vertical; margin-bottom: 12px;
+  }
+  .note-modal textarea:focus { outline: none; border-color: var(--sage); }
+  .note-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .note-cancel {
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--cream); color: var(--text); cursor: pointer;
+    font-family: var(--font-body); font-size: 13px;
+  }
+  .note-save {
+    padding: 7px 14px; border: none; border-radius: 6px;
+    background: var(--sage-deeper); color: var(--cream); cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  }
+
+  /* Info bar */
+  .info-bar {
+    padding: 7px 14px; background: var(--white);
+    border-top: 1px solid var(--border-light);
+    font-size: 12px; color: var(--text-muted);
+    min-height: 32px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .info-bar .tag {
+    background: var(--parchment); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1px 8px; font-size: 11px;
+  }
+  .info-good { color: var(--sage-dark); font-weight: 500; }
+  .info-warn { color: var(--harvest); font-weight: 500; }
+
+  /* Calendar */
+  .cal-panel { flex: 1; overflow: auto; padding: 16px; }
+  .cal-legend {
+    display: flex; gap: 14px; font-size: 12px;
+    color: var(--text-muted); margin-bottom: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .cal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .cal-table th {
+    padding: 6px 4px; text-align: center; font-weight: 600;
+    border-bottom: 1px solid var(--border); color: var(--text-muted);
+    font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .cal-table th:first-child { text-align: left; padding-left: 8px; width: 130px; }
+  .cal-table td {
+    padding: 5px 4px; border-bottom: 1px solid var(--border-light);
+    vertical-align: middle; text-align: center;
+  }
+  .cal-table td:first-child { text-align: left; padding-left: 8px; }
+  .cal-bar { height: 9px; border-radius: 3px; display: inline-block; min-width: 4px; width: 75%; }
+
+  /* List */
+  .list-panel { flex: 1; overflow: auto; padding: 16px; }
+  .list-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .list-header h3 { font-family: var(--font-display); font-size: 17px; color: var(--sage-deeper); }
+  .list-print-btn {
+    margin-left: auto; padding: 5px 12px; background: var(--cream);
+    border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    font-size: 12px; font-family: var(--font-body); color: var(--text-muted);
+  }
+  .list-print-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+  .list-group-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+    padding: 8px 0 4px; border-bottom: 1px solid var(--border-light); margin-bottom: 4px;
+  }
+  .list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 6px; border-bottom: 1px solid var(--border-light); font-size: 13px;
+  }
+  .list-emoji { font-size: 18px; }
+  .list-name { flex: 1; font-weight: 500; }
+  .list-qty {
+    background: var(--parchment); border-radius: 5px;
+    padding: 2px 9px; font-size: 11px; font-weight: 600;
+    color: var(--soil); min-width: 30px; text-align: center;
+  }
+  .list-unit { color: var(--text-muted); font-size: 11px; }
+  .list-timing { color: var(--sage-dark); font-size: 11px; }
+  .empty-state { color: var(--text-muted); font-size: 13px; text-align: center; padding: 32px; }
+
+  /* Print */
+  @media print {
+    .sidebar, .tab-bar, .toolbar, .info-bar, .note-overlay { display: none !important; }
+    .app-header { padding: 10px 16px; }
+    .app-body { display: block; height: auto; }
+    .main-panel { display: block; }
+    .grid-area { overflow: visible; padding: 10px; background: none; }
+    .cell { border: 1px solid #ccc; background: white !important; }
+    .cal-panel, .list-panel { padding: 10px; overflow: visible; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1>🌿 Garden Planner</h1>
+  </div>
+  <span>My Simple Life Homestead</span>
+  <div class="header-spacer"></div>
+  <span style="font-size:11px;color:var(--soil-light);">Plan · Plant · Harvest</span>
+</header>
+
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Frost Dates -->
+    <div class="sidebar-section">
+      <div class="section-label">📍 Your location</div>
+      <div class="zip-row">
+        <input type="text" id="zipInput" placeholder="ZIP code" maxlength="5" />
+        <button class="zip-btn" onclick="lookupFrost()">Look up</button>
+      </div>
+      <div class="frost-grid">
+        <div class="frost-cell"><span class="fc-label">Last frost</span><span class="fc-val" id="lastFrost">—</span></div>
+        <div class="frost-cell"><span class="fc-label">First frost</span><span class="fc-val" id="firstFrost">—</span></div>
+        <div class="frost-cell"><span class="fc-label">Zone</span><span class="fc-val" id="zoneVal">—</span></div>
+        <div class="frost-cell"><span class="fc-label">Grow days</span><span class="fc-val" id="growDays">—</span></div>
+      </div>
+      <div class="frost-note" id="frostNote">Enter your ZIP for personalized dates</div>
+    </div>
+
+    <!-- Bed Manager -->
+    <div class="sidebar-section">
+      <div class="section-label">🪴 Garden beds</div>
+      <div class="bed-list" id="bedList"></div>
+      <div class="add-bed-row">
+        <input type="text" id="newBedName" placeholder="Bed name…" maxlength="20" />
+        <select id="newBedType">
+          <option value="raised">Raised</option>
+          <option value="inground">In-ground</option>
+          <option value="container">Container</option>
+          <option value="row">Row</option>
+        </select>
+        <button class="add-bed-btn" onclick="addBed()">+</button>
+      </div>
+    </div>
+
+    <!-- Plant Library -->
+    <div class="sidebar-section">
+      <div class="section-label">🌱 Plant library</div>
+      <div class="plant-search-wrap">
+        <input type="text" id="plantSearch" placeholder="Search 55 plants…" oninput="filterPlants()" />
+      </div>
+      <div class="plant-categories" id="catChips"></div>
+      <div class="plant-grid" id="plantGrid"></div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-panel">
+
+    <nav class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('grid')">🗺 Garden Grid</button>
+      <button class="tab-btn" onclick="switchTab('calendar')">📅 Planting Calendar</button>
+      <button class="tab-btn" onclick="switchTab('list')">📋 Shopping List</button>
+    </nav>
+
+    <!-- GRID VIEW -->
+    <div id="gridView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="toolbar">
+        <label>Columns</label>
+        <input type="number" id="colCount" value="8" min="2" max="24" onchange="buildGrid()" />
+        <label>Rows</label>
+        <input type="number" id="rowCount" value="6" min="2" max="20" onchange="buildGrid()" />
+        <div class="t-spacer"></div>
+        <button class="t-btn" onclick="saveLayout()" title="Save to browser">💾 Save</button>
+        <button class="t-btn" onclick="loadLayout()" title="Load saved layout">📂 Load</button>
+        <button class="t-btn primary" onclick="window.print()" title="Print garden plan">🖨 Print</button>
+        <button class="t-btn danger" onclick="clearGrid()">🗑 Clear bed</button>
+      </div>
+      <div class="grid-area" id="gridArea">
+        <div class="bed-label-banner" id="bedBanner">
+          <span id="bedBannerName">Bed A</span>
+          <span class="bed-type-badge" id="bedBannerType">Raised</span>
+        </div>
+        <div class="garden-grid" id="gardenGrid"></div>
+      </div>
+      <div class="info-bar" id="infoBar">
+        Select a plant from the sidebar, then click a grid cell — or drag and drop. Right-click a cell to add a note.
+      </div>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="calendarView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="cal-panel">
+        <div class="cal-legend">
+          <span style="font-weight:600;color:var(--text)">Growing timeline</span>
+          <span style="display:flex;align-items:center;gap:4px;"><div class="leg-dot" style="background:#7a9e7e"></div>Sow indoors</span>
+          <span style="display:flex;align-items:center;gap:4px;"><div class="leg-dot" style="background:#c4a882"></div>Direct sow / transplant</span>
+          <span style="display:flex;align-items:center;gap:4px;"><div class="leg-dot" style="background:#c8762a"></div>Harvest window</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-muted);" id="calZoneNote">Add ZIP code for personalized timing</span>
+        </div>
+        <table class="cal-table">
+          <thead><tr id="calHead"></tr></thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="listView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="list-panel">
+        <div class="list-header">
+          <h3>Shopping & Planting List</h3>
+          <button class="list-print-btn" onclick="window.print()">🖨 Print list</button>
+        </div>
+        <div id="listContent"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Note Modal -->
+<div class="note-overlay" id="noteOverlay">
+  <div class="note-modal">
+    <h3 id="noteModalTitle">Add a note</h3>
+    <textarea id="noteText" placeholder="Variety name, planting date, special care notes…"></textarea>
+    <div class="note-actions">
+      <button class="note-cancel" onclick="closeNote()">Cancel</button>
+      <button class="note-save" onclick="saveNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Plant Library (55 plants) ───────────────────────────────────────
+const PLANTS = [
+  // Nightshades
+  {id:'tomato',name:'Tomato',emoji:'🍅',cat:'nightshade',sqft:1,sow:3,trans:5,harv:8,sowType:'indoor',companions:['basil','carrot','parsley','marigold'],avoid:['fennel','cabbage','pepper','corn']},
+  {id:'pepper',name:'Pepper',emoji:'🫑',cat:'nightshade',sqft:1,sow:3,trans:5,harv:8,sowType:'indoor',companions:['basil','carrot','tomato','parsley'],avoid:['fennel','kohlrabi']},
+  {id:'eggplant',name:'Eggplant',emoji:'🍆',cat:'nightshade',sqft:1,sow:3,trans:5,harv:8,sowType:'indoor',companions:['thyme','marigold','pepper'],avoid:['fennel']},
+  {id:'potato',name:'Potato',emoji:'🥔',cat:'nightshade',sqft:1,sow:4,trans:null,harv:8,sowType:'direct',companions:['beans','corn','cabbage','marigold'],avoid:['tomato','zucchini','cucumber']},
+  // Brassicas
+  {id:'kale',name:'Kale',emoji:'🥦',cat:'brassica',sqft:1,sow:3,trans:4,harv:6,sowType:'indoor',companions:['beets','celery','herbs','dill'],avoid:['tomato','strawberry']},
+  {id:'broccoli',name:'Broccoli',emoji:'🥦',cat:'brassica',sqft:2,sow:3,trans:4,harv:7,sowType:'indoor',companions:['dill','celery','sage'],avoid:['tomato','pepper','strawberry']},
+  {id:'cabbage',name:'Cabbage',emoji:'🥬',cat:'brassica',sqft:2,sow:3,trans:4,harv:7,sowType:'indoor',companions:['dill','celery','onion'],avoid:['tomato','pepper','strawberry']},
+  {id:'cauliflower',name:'Cauliflower',emoji:'🥦',cat:'brassica',sqft:2,sow:3,trans:4,harv:7,sowType:'indoor',companions:['dill','celery'],avoid:['tomato','strawberry']},
+  {id:'brussels',name:'Brussels Sprouts',emoji:'🌿',cat:'brassica',sqft:2,sow:3,trans:5,harv:9,sowType:'indoor',companions:['thyme','dill','mint'],avoid:['tomato','strawberry']},
+  {id:'kohlrabi',name:'Kohlrabi',emoji:'🟢',cat:'brassica',sqft:0.5,sow:3,trans:4,harv:6,sowType:'indoor',companions:['onion','beets','cucumber'],avoid:['pepper','tomato']},
+  // Leafy Greens
+  {id:'lettuce',name:'Lettuce',emoji:'🥬',cat:'leafy',sqft:0.25,sow:3,trans:4,harv:5,sowType:'indoor',companions:['carrot','radish','strawberry','chives'],avoid:[]},
+  {id:'spinach',name:'Spinach',emoji:'🍃',cat:'leafy',sqft:0.25,sow:3,trans:null,harv:5,sowType:'direct',companions:['strawberry','garlic','lettuce'],avoid:[]},
+  {id:'arugula',name:'Arugula',emoji:'🍃',cat:'leafy',sqft:0.25,sow:4,trans:null,harv:5,sowType:'direct',companions:['lettuce','spinach'],avoid:[]},
+  {id:'swisschard',name:'Swiss Chard',emoji:'🍃',cat:'leafy',sqft:0.5,sow:3,trans:4,harv:6,sowType:'indoor',companions:['onion','beets','lettuce'],avoid:[]},
+  {id:'mustardgreens',name:'Mustard Greens',emoji:'🍃',cat:'leafy',sqft:0.5,sow:3,trans:null,harv:5,sowType:'direct',companions:['garlic','onion'],avoid:['beets']},
+  // Roots
+  {id:'carrot',name:'Carrot',emoji:'🥕',cat:'root',sqft:0.0625,sow:3,trans:null,harv:7,sowType:'direct',companions:['tomato','lettuce','onion','sage'],avoid:['dill']},
+  {id:'radish',name:'Radish',emoji:'🔴',cat:'root',sqft:0.0625,sow:3,trans:null,harv:4,sowType:'direct',companions:['cucumber','lettuce','peas','nasturtium'],avoid:[]},
+  {id:'beets',name:'Beets',emoji:'🫀',cat:'root',sqft:0.25,sow:4,trans:null,harv:7,sowType:'direct',companions:['kale','lettuce','onion'],avoid:['mustardgreens']},
+  {id:'turnip',name:'Turnip',emoji:'🔵',cat:'root',sqft:0.25,sow:3,trans:null,harv:5,sowType:'direct',companions:['peas','lettuce'],avoid:[]},
+  {id:'parsnip',name:'Parsnip',emoji:'🥕',cat:'root',sqft:0.25,sow:4,trans:null,harv:9,sowType:'direct',companions:['garlic','pepper'],avoid:['carrot','celery']},
+  {id:'sweetpotato',name:'Sweet Potato',emoji:'🍠',cat:'root',sqft:4,sow:null,trans:5,harv:9,sowType:'transplant',companions:['thyme','dill'],avoid:['squash']},
+  // Legumes
+  {id:'beans',name:'Beans',emoji:'🫘',cat:'legume',sqft:0.25,sow:5,trans:null,harv:7,sowType:'direct',companions:['corn','squash','carrot','cucumber'],avoid:['onion','garlic','pepper']},
+  {id:'peas',name:'Peas',emoji:'🟢',cat:'legume',sqft:0.25,sow:3,trans:null,harv:6,sowType:'direct',companions:['carrot','radish','lettuce','mint'],avoid:['onion','garlic']},
+  // Alliums
+  {id:'onion',name:'Onion',emoji:'🧅',cat:'allium',sqft:0.25,sow:2,trans:4,harv:7,sowType:'indoor',companions:['carrot','lettuce','chamomile','tomato'],avoid:['beans','peas']},
+  {id:'garlic',name:'Garlic',emoji:'🧄',cat:'allium',sqft:0.25,sow:10,trans:null,harv:7,sowType:'direct',companions:['tomato','pepper','carrot','roses'],avoid:['beans','peas']},
+  {id:'chives',name:'Chives',emoji:'🌿',cat:'allium',sqft:0.25,sow:3,trans:4,harv:5,sowType:'indoor',companions:['carrot','tomato','pepper'],avoid:['beans','peas']},
+  {id:'leek',name:'Leek',emoji:'🧅',cat:'allium',sqft:0.25,sow:2,trans:5,harv:9,sowType:'indoor',companions:['carrot','celery','onion'],avoid:['beans','peas']},
+  // Cucurbits
+  {id:'cucumber',name:'Cucumber',emoji:'🥒',cat:'cucurbit',sqft:1,sow:4,trans:5,harv:7,sowType:'indoor',companions:['beans','radish','sunflower','dill'],avoid:['tomato','sage','potato']},
+  {id:'zucchini',name:'Zucchini',emoji:'🥒',cat:'cucurbit',sqft:4,sow:4,trans:5,harv:7,sowType:'indoor',companions:['beans','corn','radish','nasturtium'],avoid:['potato']},
+  {id:'squash',name:'Squash',emoji:'🟠',cat:'cucurbit',sqft:4,sow:5,trans:null,harv:8,sowType:'direct',companions:['corn','beans','marigold'],avoid:['potato']},
+  {id:'pumpkin',name:'Pumpkin',emoji:'🎃',cat:'cucurbit',sqft:9,sow:5,trans:null,harv:9,sowType:'direct',companions:['corn','beans','marigold'],avoid:['potato']},
+  {id:'watermelon',name:'Watermelon',emoji:'🍉',cat:'cucurbit',sqft:9,sow:4,trans:5,harv:9,sowType:'indoor',companions:['nasturtium','corn'],avoid:['potato']},
+  {id:'cantaloupe',name:'Cantaloupe',emoji:'🍈',cat:'cucurbit',sqft:9,sow:4,trans:5,harv:9,sowType:'indoor',companions:['nasturtium','corn'],avoid:['potato']},
+  // Corn/Grain
+  {id:'corn',name:'Corn',emoji:'🌽',cat:'grain',sqft:1,sow:5,trans:null,harv:8,sowType:'direct',companions:['beans','squash','pumpkin'],avoid:['tomato']},
+  // Herbs
+  {id:'basil',name:'Basil',emoji:'🌿',cat:'herb',sqft:0.25,sow:4,trans:5,harv:6,sowType:'indoor',companions:['tomato','pepper','oregano'],avoid:['sage']},
+  {id:'parsley',name:'Parsley',emoji:'🌱',cat:'herb',sqft:0.25,sow:3,trans:5,harv:6,sowType:'indoor',companions:['tomato','corn','chives'],avoid:[]},
+  {id:'dill',name:'Dill',emoji:'🌾',cat:'herb',sqft:0.25,sow:4,trans:null,harv:7,sowType:'direct',companions:['cucumber','cabbage','lettuce'],avoid:['carrot','tomato']},
+  {id:'thyme',name:'Thyme',emoji:'🌿',cat:'herb',sqft:0.25,sow:3,trans:5,harv:6,sowType:'indoor',companions:['tomato','eggplant','roses'],avoid:[]},
+  {id:'mint',name:'Mint',emoji:'🍃',cat:'herb',sqft:0.5,sow:3,trans:5,harv:6,sowType:'indoor',companions:['tomato','peas','cabbage'],avoid:['chamomile']},
+  {id:'oregano',name:'Oregano',emoji:'🌿',cat:'herb',sqft:0.25,sow:3,trans:5,harv:6,sowType:'indoor',companions:['basil','pepper','tomato'],avoid:[]},
+  {id:'sage',name:'Sage',emoji:'🌿',cat:'herb',sqft:0.5,sow:3,trans:5,harv:6,sowType:'indoor',companions:['carrot','cabbage','rosemary'],avoid:['cucumber','basil']},
+  {id:'rosemary',name:'Rosemary',emoji:'🌿',cat:'herb',sqft:1,sow:3,trans:5,harv:6,sowType:'indoor',companions:['beans','cabbage','carrot'],avoid:[]},
+  {id:'cilantro',name:'Cilantro',emoji:'🌱',cat:'herb',sqft:0.25,sow:4,trans:null,harv:6,sowType:'direct',companions:['spinach','tomato'],avoid:['fennel']},
+  {id:'chamomile',name:'Chamomile',emoji:'🌼',cat:'herb',sqft:0.5,sow:4,trans:null,harv:7,sowType:'direct',companions:['onion','brassicas','cucumber'],avoid:['mint']},
+  {id:'lavender',name:'Lavender',emoji:'💜',cat:'herb',sqft:1,sow:3,trans:5,harv:7,sowType:'indoor',companions:['roses','brassicas'],avoid:[]},
+  {id:'fennel',name:'Fennel',emoji:'🌿',cat:'herb',sqft:1,sow:4,trans:null,harv:8,sowType:'direct',companions:[],avoid:['tomato','pepper','beans','carrot','cucumber']},
+  // Fruits
+  {id:'strawberry',name:'Strawberry',emoji:'🍓',cat:'fruit',sqft:0.5,sow:null,trans:4,harv:6,sowType:'transplant',companions:['lettuce','spinach','thyme','beans'],avoid:['cabbage','fennel']},
+  // Flowers
+  {id:'marigold',name:'Marigold',emoji:'🌼',cat:'flower',sqft:0.25,sow:4,trans:5,harv:7,sowType:'indoor',companions:['tomato','pepper','beans','squash'],avoid:[]},
+  {id:'nasturtium',name:'Nasturtium',emoji:'🌸',cat:'flower',sqft:0.5,sow:5,trans:null,harv:7,sowType:'direct',companions:['cucumber','squash','radish','tomato'],avoid:[]},
+  {id:'sunflower',name:'Sunflower',emoji:'🌻',cat:'flower',sqft:1,sow:5,trans:null,harv:9,sowType:'direct',companions:['cucumber','squash','corn'],avoid:['potato']},
+  {id:'borage',name:'Borage',emoji:'🔵',cat:'flower',sqft:1,sow:4,trans:null,harv:7,sowType:'direct',companions:['tomato','squash','strawberry'],avoid:[]},
+  // Other
+  {id:'celery',name:'Celery',emoji:'🥬',cat:'other',sqft:0.5,sow:2,trans:5,harv:8,sowType:'indoor',companions:['leek','tomato','cabbage'],avoid:[]},
+  {id:'asparagus',name:'Asparagus',emoji:'🥦',cat:'other',sqft:2,sow:null,trans:4,harv:5,sowType:'transplant',companions:['tomato','parsley','basil'],avoid:['onion','garlic']},
+  {id:'artichoke',name:'Artichoke',emoji:'🌿',cat:'other',sqft:4,sow:3,trans:5,harv:7,sowType:'indoor',companions:['sunflower','tarragon'],avoid:[]},
+];
+
+const CATS = ['all','nightshade','brassica','leafy','root','legume','allium','cucurbit','grain','herb','fruit','flower','other'];
+const CAT_ICONS = {all:'🌱',nightshade:'🍅',brassica:'🥦',leafy:'🍃',root:'🥕',legume:'🫘',allium:'🧅',cucurbit:'🥒',grain:'🌽',herb:'🌿',fruit:'🍓',flower:'🌸',other:'🪴'};
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ─── State ───────────────────────────────────────────────────────────
+let beds = [{id:'bed-a', name:'Bed A', type:'raised'}];
+let activeBedId = 'bed-a';
+let grids = {'bed-a': {}};
+let notes = {};
+let selectedPlant = null;
+let lastFrostMonth = 3;
+let firstFrostMonth = 9;
+let activeCat = 'all';
+let noteKey = null;
+
+// ─── Bed Manager ─────────────────────────────────────────────────────
+function renderBedList() {
+  const el = document.getElementById('bedList');
+  el.innerHTML = beds.map(b => `
+    <div class="bed-item ${b.id===activeBedId?'active':''}" onclick="switchBed('${b.id}')">
+      <span class="bed-icon">${bedIcon(b.type)}</span>
+      <span class="bed-name">${b.name}</span>
+      <span class="bed-type">${b.type}</span>
+      ${beds.length>1?`<span class="del-bed" onclick="deleteBed(event,'${b.id}')">✕</span>`:''}
+    </div>`).join('');
+  const active = beds.find(b=>b.id===activeBedId);
+  if(active){
+    document.getElementById('bedBannerName').textContent = active.name;
+    document.getElementById('bedBannerType').textContent = active.type.charAt(0).toUpperCase()+active.type.slice(1);
+  }
+}
+function bedIcon(type){return{raised:'🪴',inground:'🌍',container:'🪣',row:'〰️'}[type]||'🪴';}
+function addBed(){
+  const name = document.getElementById('newBedName').value.trim();
+  const type = document.getElementById('newBedType').value;
+  if(!name)return;
+  const id = 'bed-'+Date.now();
+  beds.push({id,name,type});
+  grids[id]={};
+  activeBedId=id;
+  document.getElementById('newBedName').value='';
+  renderBedList();
+  buildGrid();
+}
+function switchBed(id){
+  activeBedId=id;
+  renderBedList();
+  buildGrid();
+}
+function deleteBed(e,id){
+  e.stopPropagation();
+  if(!confirm('Delete this bed and its layout?'))return;
+  beds=beds.filter(b=>b.id!==id);
+  delete grids[id];
+  if(activeBedId===id) activeBedId=beds[0].id;
+  renderBedList();
+  buildGrid();
+}
+
+// ─── Plant Library ────────────────────────────────────────────────────
+function renderCatChips(){
+  const el=document.getElementById('catChips');
+  el.innerHTML=CATS.map(c=>`<span class="cat-chip ${c===activeCat?'active':''}" onclick="setcat('${c}')">${CAT_ICONS[c]} ${c==='all'?'All':c}</span>`).join('');
+}
+function setcat(c){activeCat=c;renderCatChips();filterPlants();}
+function filterPlants(){
+  const q=document.getElementById('plantSearch').value.toLowerCase();
+  const list=PLANTS.filter(p=>{
+    const catOk=activeCat==='all'||p.cat===activeCat;
+    const qOk=!q||p.name.toLowerCase().includes(q);
+    return catOk&&qOk;
+  });
+  const g=document.getElementById('plantGrid');
+  g.innerHTML=list.map(p=>`
+    <div class="plant-chip ${selectedPlant===p.id?'selected':''}" draggable="true"
+      data-id="${p.id}" onclick="selectPlant('${p.id}')"
+      ondragstart="dragStart(event,'${p.id}')">
+      <span class="p-emoji">${p.emoji}</span>
+      <span class="p-name">${p.name}</span>
+      <span class="p-sqft">${p.sqft<1?Math.round(1/p.sqft)+'/sqft':p.sqft+' sqft'}</span>
+    </div>`).join('');
+}
+function dragStart(e,id){e.dataTransfer.setData('plantId',id);selectedPlant=id;}
+function selectPlant(id){
+  selectedPlant=id;
+  filterPlants();
+  const p=PLANTS.find(x=>x.id===id);
+  if(p){
+    const sqft=p.sqft<1?`${Math.round(1/p.sqft)} per sq ft`:`${p.sqft} sq ft each`;
+    showInfo(`${p.emoji} <b>${p.name}</b> &nbsp;<span class="tag">${sqft}</span>&nbsp;<span class="tag">${p.sowType==='indoor'?'Start indoors':p.sowType==='transplant'?'Transplant only':'Direct sow'}</span>&nbsp; Click a cell to place, or drag.`);
+  }
+}
+
+// ─── Grid ─────────────────────────────────────────────────────────────
+function buildGrid(){
+  const cols=parseInt(document.getElementById('colCount').value)||8;
+  const rows=parseInt(document.getElementById('rowCount').value)||6;
+  const g=document.getElementById('gardenGrid');
+  g.style.gridTemplateColumns=`repeat(${cols},54px)`;
+  g.innerHTML='';
+  const currentGrid=grids[activeBedId]||{};
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const key=`${activeBedId}:${r}_${c}`;
+      const cell=document.createElement('div');
+      cell.className='cell'+(currentGrid[`${r}_${c}`]?' occupied':'');
+      cell.dataset.key=`${r}_${c}`;
+      if(currentGrid[`${r}_${c}`]){
+        const p=PLANTS.find(x=>x.id===currentGrid[`${r}_${c}`]);
+        if(p) cell.innerHTML=`<span class="cell-emoji">${p.emoji}</span><span class="cell-name">${p.name}</span><span class="cell-clear" onclick="clearCell(event,'${r}_${c}')">✕</span><div class="cell-note-dot" id="nd-${r}_${c}" style="display:${notes[key]?'block':'none'}"></div>`;
+      }
+      cell.onclick=()=>placeOnClick(`${r}_${c}`);
+      cell.oncontextmenu=e=>{e.preventDefault();openNote(`${r}_${c}`);};
+      cell.ondragover=e=>{e.preventDefault();cell.classList.add('drag-over');};
+      cell.ondragleave=()=>cell.classList.remove('drag-over');
+      cell.ondrop=e=>{e.preventDefault();cell.classList.remove('drag-over');const id=e.dataTransfer.getData('plantId');if(id)placePlant(`${r}_${c}`,id);};
+      g.appendChild(cell);
+    }
+  }
+  checkCompanions();
+}
+
+function placeOnClick(key){
+  if(!selectedPlant){showInfo('Select a plant from the sidebar first.');return;}
+  placePlant(key,selectedPlant);
+}
+function placePlant(key,plantId){
+  if(!grids[activeBedId])grids[activeBedId]={};
+  grids[activeBedId][key]=plantId;
+  buildGrid();
+  const p=PLANTS.find(x=>x.id===plantId);
+  if(p)showInfo(`Placed ${p.emoji} ${p.name}. Right-click any cell to add a note.`);
+}
+function clearCell(e,key){
+  e.stopPropagation();
+  delete grids[activeBedId][key];
+  const nkey=`${activeBedId}:${key}`;
+  delete notes[nkey];
+  buildGrid();
+  showInfo('Cell cleared.');
+}
+function clearGrid(){
+  const placed=Object.keys(grids[activeBedId]||{}).length;
+  if(!placed||confirm('Clear this entire bed?')){grids[activeBedId]={};buildGrid();showInfo('Bed cleared.');}
+}
+
+function checkCompanions(){
+  const cols=parseInt(document.getElementById('colCount').value)||8;
+  const rows=parseInt(document.getElementById('rowCount').value)||6;
+  const currentGrid=grids[activeBedId]||{};
+  document.querySelectorAll('.cell.occupied').forEach(cell=>{
+    const [r,c]=cell.dataset.key.split('_').map(Number);
+    const pid=currentGrid[cell.dataset.key];
+    if(!pid)return;
+    const p=PLANTS.find(x=>x.id===pid);
+    if(!p)return;
+    const neighbors=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+    let warn=false;
+    neighbors.forEach(([nr,nc])=>{
+      if(nr<0||nr>=rows||nc<0||nc>=cols)return;
+      const nid=currentGrid[`${nr}_${nc}`];
+      if(nid&&p.avoid.includes(nid))warn=true;
+    });
+    const existing=cell.querySelector('.cell-warn');
+    if(warn&&!existing){const w=document.createElement('span');w.className='cell-warn';w.title='⚠ Bad companion nearby';w.textContent='⚠';cell.appendChild(w);}
+    else if(!warn&&existing)existing.remove();
+  });
+}
+
+// ─── Notes ────────────────────────────────────────────────────────────
+function openNote(key){
+  noteKey=`${activeBedId}:${key}`;
+  const currentGrid=grids[activeBedId]||{};
+  const pid=currentGrid[key];
+  const p=pid?PLANTS.find(x=>x.id===pid):null;
+  document.getElementById('noteModalTitle').textContent=p?`Note — ${p.emoji} ${p.name}`:'Add a note';
+  document.getElementById('noteText').value=notes[noteKey]||'';
+  document.getElementById('noteOverlay').classList.add('open');
+}
+function closeNote(){document.getElementById('noteOverlay').classList.remove('open');noteKey=null;}
+function saveNote(){
+  if(!noteKey)return;
+  const val=document.getElementById('noteText').value.trim();
+  if(val)notes[noteKey]=val;else delete notes[noteKey];
+  const dotId='nd-'+noteKey.split(':')[1];
+  const dot=document.getElementById(dotId);
+  if(dot)dot.style.display=val?'block':'none';
+  closeNote();
+}
+document.getElementById('noteOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNote();});
+
+// ─── Frost Dates ──────────────────────────────────────────────────────
+const FROST_DB = [
+  {min:99500,max:99999,zone:'3a',lf:'May 15',ff:'Sep 1',lfm:4,ffm:8},
+  {min:59000,max:59999,zone:'4b',lf:'May 1',ff:'Sep 15',lfm:4,ffm:8},
+  {min:55000,max:57999,zone:'4a',lf:'Apr 30',ff:'Oct 1',lfm:3,ffm:9},
+  {min:63000,max:65999,zone:'6a',lf:'Apr 10',ff:'Oct 25',lfm:3,ffm:9},
+  {min:64000,max:64999,zone:'6a',lf:'Apr 10',ff:'Oct 25',lfm:3,ffm:9},
+  {min:72000,max:72999,zone:'7a',lf:'Mar 20',ff:'Nov 10',lfm:2,ffm:10},
+  {min:77000,max:77999,zone:'8b',lf:'Feb 28',ff:'Nov 25',lfm:1,ffm:10},
+  {min:90000,max:96699,zone:'10a',lf:'Jan 15',ff:'Dec 15',lfm:0,ffm:11},
+  {min:32000,max:34999,zone:'9a',lf:'Feb 15',ff:'Dec 1',lfm:1,ffm:11},
+  {min:10000,max:14999,zone:'5b',lf:'Apr 15',ff:'Oct 15',lfm:3,ffm:9},
+  {min:60000,max:62999,zone:'5b',lf:'Apr 15',ff:'Oct 15',lfm:3,ffm:9},
+  {min:20000,max:20999,zone:'7a',lf:'Mar 25',ff:'Nov 5',lfm:2,ffm:10},
+  {min:30000,max:31999,zone:'8a',lf:'Mar 1',ff:'Nov 20',lfm:1,ffm:10},
+  {min:40000,max:42999,zone:'6a',lf:'Apr 10',ff:'Oct 25',lfm:3,ffm:9},
+  {min:43000,max:45999,zone:'5b',lf:'Apr 20',ff:'Oct 10',lfm:3,ffm:9},
+  {min:46000,max:49999,zone:'5a',lf:'May 1',ff:'Oct 1',lfm:4,ffm:9},
+  {min:80000,max:81999,zone:'5b',lf:'May 1',ff:'Oct 7',lfm:4,ffm:9},
+  {min:85000,max:86999,zone:'9b',lf:'Jan 31',ff:'Dec 15',lfm:0,ffm:11},
+  {min:97000,max:97999,zone:'8b',lf:'Feb 25',ff:'Nov 30',lfm:1,ffm:10},
+  {min:98000,max:98499,zone:'8b',lf:'Feb 25',ff:'Nov 30',lfm:1,ffm:10},
+  {min:70000,max:71599,zone:'7a',lf:'Mar 15',ff:'Nov 15',lfm:2,ffm:10},
+];
+function lookupFrost(){
+  const zip=document.getElementById('zipInput').value.trim();
+  if(zip.length!==5||isNaN(zip)){document.getElementById('frostNote').textContent='Please enter a valid 5-digit ZIP';return;}
+  const z=parseInt(zip);
+  let match=FROST_DB.find(d=>z>=d.min&&z<=d.max);
+  if(!match) match={zone:'6a',lf:'Apr 10',ff:'Oct 25',lfm:3,ffm:9};
+  lastFrostMonth=match.lfm;
+  firstFrostMonth=match.ffm;
+  document.getElementById('lastFrost').textContent=match.lf;
+  document.getElementById('firstFrost').textContent=match.ff;
+  document.getElementById('zoneVal').textContent=match.zone;
+  document.getElementById('growDays').textContent=((match.ffm-match.lfm)*30)+'d';
+  document.getElementById('frostNote').textContent='Estimated — verify at planthardiness.ars.usda.gov';
+  document.getElementById('calZoneNote').textContent='Zone '+match.zone+' · Last frost '+match.lf;
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────
+function buildCalendar(){
+  const head=document.getElementById('calHead');
+  const body=document.getElementById('calBody');
+  head.innerHTML='<th>Plant</th>'+MONTHS.map(m=>`<th>${m}</th>`).join('');
+  const placed=[...new Set(Object.values(Object.assign({},...beds.map(b=>grids[b.id]||{}))))];
+  if(!placed.length){body.innerHTML='<tr><td colspan="13" class="empty-state">Place plants on the grid to see their calendar.</td></tr>';return;}
+  const lf=lastFrostMonth;
+  body.innerHTML=placed.map(id=>{
+    const p=PLANTS.find(x=>x.id===id);
+    if(!p)return'';
+    const cells=MONTHS.map((_,mi)=>{
+      let bar='';
+      const sowStart=p.sow?lf-8+(p.sow-1)*1.8:null;
+      const sowEnd=p.sow?sowStart+2.5:null;
+      const transStart=p.trans?lf+(p.trans-(p.sow||p.trans))*1.5:null;
+      const transEnd=p.trans?transStart+1.8:null;
+      const harvStart=lf+(p.harv-(p.sow||p.trans||5))*1.5+1;
+      const harvEnd=harvStart+3.5;
+      const inR=(s,e)=>s!==null&&mi>=Math.max(0,Math.floor(s))&&mi<=Math.min(11,Math.floor(e));
+      if(inR(sowStart,sowEnd))bar=`<div class="cal-bar" style="background:#7a9e7e"></div>`;
+      else if(inR(transStart,transEnd))bar=`<div class="cal-bar" style="background:#c4a882"></div>`;
+      else if(inR(harvStart,harvEnd))bar=`<div class="cal-bar" style="background:#c8762a"></div>`;
+      return`<td>${bar}</td>`;
+    }).join('');
+    return`<tr><td><span style="margin-right:4px">${p.emoji}</span>${p.name}</td>${cells}</tr>`;
+  }).join('');
+}
+
+// ─── Shopping List ─────────────────────────────────────────────────────
+function buildList(){
+  const counts={};
+  beds.forEach(b=>{Object.values(grids[b.id]||{}).forEach(id=>{counts[id]=(counts[id]||0)+1;});});
+  const el=document.getElementById('listContent');
+  if(!Object.keys(counts).length){el.innerHTML='<div class="empty-state">Add plants to any bed first.</div>';return;}
+  const bycat={};
+  Object.entries(counts).forEach(([id,cnt])=>{
+    const p=PLANTS.find(x=>x.id===id);if(!p)return;
+    if(!bycat[p.cat])bycat[p.cat]=[];
+    bycat[p.cat].push({p,cnt});
+  });
+  el.innerHTML=Object.entries(bycat).map(([cat,items])=>`
+    <div class="list-group-label">${CAT_ICONS[cat]||'🌱'} ${cat.charAt(0).toUpperCase()+cat.slice(1)}</div>
+    ${items.map(({p,cnt})=>{
+      const qty=p.sqft<=0.25?cnt*Math.round(1/p.sqft):cnt;
+      const unit=p.sowType==='indoor'?'starts (start indoors)':p.sowType==='transplant'?'transplants':'seeds (direct sow)';
+      const bed=beds.map(b=>Object.values(grids[b.id]||{}).filter(id=>id===p.id).length>0?b.name:null).filter(Boolean).join(', ');
+      return`<div class="list-item"><span class="list-emoji">${p.emoji}</span><span class="list-name">${p.name}</span><span class="list-qty">${qty}</span><span class="list-unit">${unit}</span><span class="list-timing" style="margin-left:auto">${bed}</span></div>`;
+    }).join('')}`).join('');
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['grid','calendar','list'][i]===tab));
+  document.getElementById('gridView').style.display=tab==='grid'?'flex':'none';
+  document.getElementById('calendarView').style.display=tab==='calendar'?'flex':'none';
+  document.getElementById('listView').style.display=tab==='list'?'flex':'none';
+  if(tab==='calendar')buildCalendar();
+  if(tab==='list')buildList();
+}
+
+// ─── Save / Load ──────────────────────────────────────────────────────
+function saveLayout(){
+  const data={beds,grids,notes,cols:document.getElementById('colCount').value,rows:document.getElementById('rowCount').value};
+  localStorage.setItem('msl_garden_planner',JSON.stringify(data));
+  showInfo('<span class="info-good">✓ Layout saved to your browser.</span>');
+}
+function loadLayout(){
+  const raw=localStorage.getItem('msl_garden_planner');
+  if(!raw){showInfo('No saved layout found. Save first!');return;}
+  try{
+    const d=JSON.parse(raw);
+    beds=d.beds||beds;grids=d.grids||grids;notes=d.notes||{};
+    activeBedId=beds[0].id;
+    document.getElementById('colCount').value=d.cols||8;
+    document.getElementById('rowCount').value=d.rows||6;
+    renderBedList();buildGrid();
+    showInfo('<span class="info-good">✓ Garden layout loaded.</span>');
+  }catch(e){showInfo('Could not load saved data.');}
+}
+
+// ─── Info bar ─────────────────────────────────────────────────────────
+function showInfo(html){document.getElementById('infoBar').innerHTML=html;}
+
+// ─── Init ─────────────────────────────────────────────────────────────
+renderCatChips();
+filterPlants();
+renderBedList();
+buildGrid();
+</script>
+</body>
+</html>
