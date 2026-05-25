@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Garden Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+:root{
+  --cream:#faf7f2;--parchment:#f0ead8;--sage:#7a9e7e;--sage-dark:#4e7254;
+  --sage-deeper:#2f4d35;--soil:#7a5c3a;--soil-light:#c4a882;
+  --harvest:#c8762a;--harvest-light:#f0c97a;--sky:#6a9ab5;--sky-light:#e1eef5;
+  --red:#b94444;--red-light:#fdf0f0;--green-light:#e8f0e9;
+  --text:#2a2218;--text-muted:#7a6e5e;--border:#ddd5c0;--border-light:#ede8db;
+  --white:#fff;
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'Source Sans 3',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-body);background:var(--cream);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* HEADER */
+.hdr{background:var(--sage-deeper);padding:10px 18px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--harvest);flex-wrap:wrap;}
+.hdr h1{font-family:var(--font-display);font-size:19px;color:var(--cream);font-weight:500;white-space:nowrap;}
+.hdr-name{font-family:var(--font-display);font-size:13px;color:var(--cream);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:4px 10px;width:190px;}
+.hdr-name::placeholder{color:rgba(255,255,255,.4);}
+.hdr-name:focus{outline:none;border-color:rgba(255,255,255,.5);}
+.hdr-label{font-size:10px;color:var(--soil-light);white-space:nowrap;}
+.hdr-season{padding:4px 8px;font-family:var(--font-body);font-size:12px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.1);color:var(--cream);cursor:pointer;}
+.hdr-season option{color:var(--text);background:var(--white);}
+.hdr-spacer{flex:1;}
+.hdr-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.hbtn{padding:5px 10px;font-size:11px;font-family:var(--font-body);border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:var(--cream);font-weight:500;white-space:nowrap;}
+.hbtn:hover{background:rgba(255,255,255,.22);}
+.hbtn.accent{background:var(--harvest);border-color:var(--harvest);}
+.hbtn.accent:hover{background:#b56822;}
+.hbtn.planner{background:var(--sky);border-color:var(--sky);}
+.hbtn.planner:hover{background:#5488a0;}
+
+/* TABS */
+.tab-bar{display:flex;background:var(--white);border-bottom:1px solid var(--border);padding:0 14px;overflow-x:auto;}
+.tab-btn{padding:10px 14px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:var(--font-body);transition:all .1s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--sage-deeper);border-bottom-color:var(--sage-deeper);}
+
+/* PANELS */
+.panel{display:none;flex-direction:column;height:calc(100vh - 98px);overflow:hidden;}
+.panel.active{display:flex;}
+.panel-toolbar{display:flex;align-items:center;gap:7px;padding:7px 13px;background:var(--parchment);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;}
+.panel-body{flex:1;overflow-y:auto;padding:14px;}
+
+/* TOOLBAR ELEMENTS */
+.t-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;font-size:12px;font-family:var(--font-body);border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--text);cursor:pointer;font-weight:500;white-space:nowrap;}
+.t-btn:hover{background:var(--cream);}
+.t-btn.primary{background:var(--sage-deeper);color:var(--cream);border-color:var(--sage-deeper);}
+.t-btn.primary:hover{background:var(--sage-dark);}
+.t-btn.danger{color:var(--red);border-color:#e8b0b0;}
+.t-btn.danger:hover{background:var(--red-light);}
+.t-search{padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-body);font-size:12px;background:var(--white);color:var(--text);min-width:140px;}
+.t-search:focus{outline:none;border-color:var(--sage);}
+.t-select{padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-body);font-size:12px;background:var(--white);color:var(--text);}
+.t-spacer{flex:1;}
+.t-total{font-size:12px;color:var(--text-muted);white-space:nowrap;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{padding:7px 8px;text-align:left;font-weight:600;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--parchment);white-space:nowrap;}
+.data-table td{padding:7px 8px;border-bottom:1px solid var(--border-light);vertical-align:middle;}
+.data-table tr:hover td{background:rgba(122,158,126,.06);}
+.data-table tr:last-child td{border-bottom:none;}
+.td-actions{display:flex;gap:4px;}
+.act-btn{padding:3px 7px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--cream);cursor:pointer;font-family:var(--font-body);color:var(--text-muted);}
+.act-btn:hover{border-color:var(--sage);color:var(--sage-dark);}
+.act-btn.red:hover{border-color:var(--red);color:var(--red);background:var(--red-light);}
+.act-btn.green{background:var(--green-light);border-color:var(--sage);color:var(--sage-dark);}
+.act-btn.green:hover{background:var(--sage);color:var(--white);}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.04em;}
+.badge-green{background:var(--green-light);color:var(--sage-dark);}
+.badge-yellow{background:#fef9e7;color:#7a5c00;}
+.badge-red{background:var(--red-light);color:var(--red);}
+.badge-blue{background:var(--sky-light);color:#3a6a85;}
+.badge-gray{background:var(--parchment);color:var(--text-muted);}
+.rating-Excellent{color:var(--sage-dark);font-weight:600;}
+.rating-Great{color:#5a8a5e;}
+.rating-Good{color:var(--text-muted);}
+.rating-Fair{color:var(--harvest);}
+.rating-Poor{color:var(--red);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-state .es-icon{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:13px;line-height:1.6;}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+.dash-card{background:var(--white);border:1px solid var(--border-light);border-radius:10px;padding:14px 16px;}
+.dash-card .dc-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.dash-card .dc-val{font-family:var(--font-display);font-size:26px;color:var(--sage-deeper);font-weight:500;}
+.dash-card .dc-sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.dash-section{background:var(--white);border:1px solid var(--border-light);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+.dash-section h3{font-family:var(--font-display);font-size:15px;color:var(--sage-deeper);margin-bottom:12px;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px;}
+.bar-label{width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;}
+.bar-track{flex:1;height:10px;background:var(--parchment);border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--harvest);border-radius:5px;transition:width .4s;}
+.bar-val{width:50px;text-align:right;color:var(--text-muted);flex-shrink:0;}
+.dash-alert{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--red-light);border:1px solid #e8b0b0;border-radius:7px;margin-bottom:6px;font-size:12px;}
+.dash-alert-icon{font-size:16px;}
+.needs-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:12px;}
+.needs-row:last-child{border-bottom:none;}
+
+/* OVERLAYS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(42,34,24,.55);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:12px;padding:20px 22px;width:100%;max-width:460px;border:1px solid var(--border);margin:auto;}
+.modal h3{font-family:var(--font-display);font-size:17px;color:var(--sage-deeper);margin-bottom:14px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-group{margin-bottom:10px;}
+.form-group label{font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:3px;letter-spacing:.04em;text-transform:uppercase;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-body);font-size:13px;color:var(--text);background:var(--cream);}
+.form-group textarea{height:65px;resize:vertical;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--sage);}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:14px;}
+.btn-cancel{padding:7px 13px;border:1px solid var(--border);border-radius:6px;background:var(--cream);color:var(--text);cursor:pointer;font-family:var(--font-body);font-size:13px;}
+.btn-save{padding:7px 14px;border:none;border-radius:6px;background:var(--sage-deeper);color:var(--cream);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:500;}
+.qty-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:6px;}
+.qty-toggle button{flex:1;padding:6px;font-size:12px;border:none;background:var(--cream);cursor:pointer;font-family:var(--font-body);color:var(--text-muted);}
+.qty-toggle button.active{background:var(--sage-deeper);color:var(--cream);}
+.planner-link{display:inline-block;margin-top:8px;font-size:12px;color:var(--sky);text-decoration:underline;cursor:pointer;}
+
+@media print{
+  .hdr .hdr-btns,.tab-bar,.panel-toolbar{display:none!important;}
+  .panel{height:auto!important;overflow:visible!important;}
+  .panel-body{overflow:visible!important;}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <h1>🌾 Garden Tracker</h1>
+  <span class="hdr-label">Garden:</span>
+  <input class="hdr-name" type="text" id="gardenName" placeholder="Name your garden…" maxlength="40"/>
+  <span class="hdr-label">Season:</span>
+  <select class="hdr-season" id="seasonSelect" onchange="switchSeason()"></select>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-btns">
+    <button class="hbtn planner" onclick="document.getElementById('plannerImportFile').click()">🌿 Import from Planner</button>
+    <input type="file" id="plannerImportFile" accept=".json" style="display:none" onchange="importFromPlanner(event)"/>
+    <button class="hbtn" onclick="exportData()">⬇ Export</button>
+    <button class="hbtn" onclick="document.getElementById('importFile').click()">⬆ Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"/>
+    <button class="hbtn accent" onclick="window.print()">🖨 Print</button>
+    <button class="hbtn" onclick="saveData()">💾 Save</button>
+    <button class="hbtn" onclick="loadData()">📂 Load</button>
+    <a class="hbtn" href="https://garden.rlbdesigns.com" target="_blank">🗺 Open Planner</a>
+  </div>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('inventory')">🌱 Inventory</button>
+  <button class="tab-btn" onclick="switchTab('shopping')">🛒 Shopping</button>
+  <button class="tab-btn" onclick="switchTab('planting')">🪴 Planting Log</button>
+  <button class="tab-btn" onclick="switchTab('harvest')">🌾 Harvest Log</button>
+  <button class="tab-btn" onclick="switchTab('supplies')">📦 Supplies</button>
+  <button class="tab-btn" onclick="switchTab('dashboard')">📊 Dashboard</button>
+</nav>
+
+<!-- INVENTORY -->
+<div class="panel active" id="panel-inventory">
+  <div class="panel-toolbar">
+    <button class="t-btn primary" onclick="openModal('inv')">+ Add seed / plant</button>
+    <input class="t-search" type="text" id="inv-search" placeholder="Search inventory…" oninput="renderInventory()"/>
+    <select class="t-select" id="inv-filter-cat" onchange="renderInventory()">
+      <option value="">All categories</option>
+      <option>Vegetable</option><option>Herb</option><option>Fruit</option>
+      <option>Flower</option><option>Other</option>
+    </select>
+    <select class="t-select" id="inv-filter-status" onchange="renderInventory()">
+      <option value="">All statuses</option>
+      <option>In Stock</option><option>Low</option><option>Depleted</option>
+    </select>
+    <div class="t-spacer"></div>
+    <span class="t-total" id="inv-count"></span>
+  </div>
+  <div class="panel-body">
+    <table class="data-table">
+      <thead><tr>
+        <th>Plant / Variety</th><th>Category</th><th>Qty</th><th>Vendor</th>
+        <th>Purchased</th><th>Viable Until</th><th>Status</th><th>Notes</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="inv-body"></tbody>
+    </table>
+    <div id="inv-empty" class="empty-state" style="display:none">
+      <div class="es-icon">🌱</div>
+      <p>No inventory yet.<br>Add your first seed packet or plant start above.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SHOPPING -->
+<div class="panel" id="panel-shopping">
+  <div class="panel-toolbar">
+    <button class="t-btn primary" onclick="openModal('shop')">+ Add item</button>
+    <select class="t-select" id="shop-filter-pri" onchange="renderShopping()">
+      <option value="">All priorities</option>
+      <option>High</option><option>Medium</option><option>Low</option>
+    </select>
+    <div class="t-spacer"></div>
+    <span class="t-total" id="shop-total"></span>
+  </div>
+  <div class="panel-body">
+    <table class="data-table">
+      <thead><tr>
+        <th>Item</th><th>Type</th><th>Qty Needed</th><th>Vendor</th>
+        <th>Est. Cost</th><th>Priority</th><th>Notes</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="shop-body"></tbody>
+    </table>
+    <div id="shop-empty" class="empty-state" style="display:none">
+      <div class="es-icon">🛒</div>
+      <p>Shopping list is empty.<br>Add items manually or import your Planting List from the Garden Planner.</p>
+      <span class="planner-link" onclick="document.getElementById('plannerImportFile').click()">Import from Garden Planner →</span>
+    </div>
+  </div>
+</div>
+
+<!-- PLANTING LOG -->
+<div class="panel" id="panel-planting">
+  <div class="panel-toolbar">
+    <button class="t-btn primary" onclick="openModal('plant')">+ Log planting</button>
+    <select class="t-select" id="plant-filter-bed" onchange="renderPlanting()">
+      <option value="">All beds</option>
+    </select>
+    <select class="t-select" id="plant-filter-month" onchange="renderPlanting()">
+      <option value="">All months</option>
+      <option>January</option><option>February</option><option>March</option>
+      <option>April</option><option>May</option><option>June</option>
+      <option>July</option><option>August</option><option>September</option>
+      <option>October</option><option>November</option><option>December</option>
+    </select>
+    <div class="t-spacer"></div>
+    <span class="t-total" id="plant-count"></span>
+  </div>
+  <div class="panel-body">
+    <table class="data-table">
+      <thead><tr>
+        <th>Date Planted</th><th>Plant</th><th>Variety</th><th>Bed</th>
+        <th>Method</th><th>Qty</th><th>Germinated</th><th>Success</th><th>Notes</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="plant-body"></tbody>
+    </table>
+    <div id="plant-empty" class="empty-state" style="display:none">
+      <div class="es-icon">🪴</div>
+      <p>No planting records yet.<br>Log your first planting above.</p>
+    </div>
+  </div>
+</div>
+
+<!-- HARVEST LOG -->
+<div class="panel" id="panel-harvest">
+  <div class="panel-toolbar">
+    <button class="t-btn primary" onclick="openModal('harv')">+ Log harvest</button>
+    <select class="t-select" id="harv-filter-plant" onchange="renderHarvest()">
+      <option value="">All plants</option>
+    </select>
+    <select class="t-select" id="harv-filter-month" onchange="renderHarvest()">
+      <option value="">All months</option>
+      <option>January</option><option>February</option><option>March</option>
+      <option>April</option><option>May</option><option>June</option>
+      <option>July</option><option>August</option><option>September</option>
+      <option>October</option><option>November</option><option>December</option>
+    </select>
+    <div class="t-spacer"></div>
+    <span class="t-total" id="harv-total"></span>
+  </div>
+  <div class="panel-body">
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th><th>Plant</th><th>Variety</th><th>Bed</th>
+        <th>Quantity</th><th>Quality</th><th>Notes</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="harv-body"></tbody>
+    </table>
+    <div id="harv-empty" class="empty-state" style="display:none">
+      <div class="es-icon">🌾</div>
+      <p>No harvest records yet.<br>Log your first harvest above.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPLIES -->
+<div class="panel" id="panel-supplies">
+  <div class="panel-toolbar">
+    <button class="t-btn primary" onclick="openModal('sup')">+ Add supply</button>
+    <select class="t-select" id="sup-filter-cat" onchange="renderSupplies()">
+      <option value="">All categories</option>
+      <option>Soil & Amendments</option><option>Fertilizer</option>
+      <option>Pest & Disease</option><option>Tools</option>
+      <option>Containers & Structures</option><option>Other</option>
+    </select>
+    <div class="t-spacer"></div>
+    <span class="t-total" id="sup-count"></span>
+  </div>
+  <div class="panel-body">
+    <table class="data-table">
+      <thead><tr>
+        <th>Item</th><th>Category</th><th>On Hand</th><th>Unit</th>
+        <th>Reorder At</th><th>Vendor</th><th>Purchased</th><th>Notes</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="sup-body"></tbody>
+    </table>
+    <div id="sup-empty" class="empty-state" style="display:none">
+      <div class="es-icon">📦</div>
+      <p>No supplies tracked yet.<br>Add soil, fertilizer, tools and other garden supplies above.</p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel" id="panel-dashboard">
+  <div class="panel-body">
+    <div id="dash-content"></div>
+  </div>
+</div>
+
+<!-- INVENTORY MODAL -->
+<div class="overlay" id="modal-inv">
+  <div class="modal">
+    <h3 id="inv-modal-title">Add seed / plant</h3>
+    <input type="hidden" id="inv-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Plant name *</label><input type="text" id="inv-name" placeholder="e.g. Tomato"/></div>
+      <div class="form-group"><label>Variety</label><input type="text" id="inv-variety" placeholder="e.g. Cherokee Purple"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="inv-cat"><option>Vegetable</option><option>Herb</option><option>Fruit</option><option>Flower</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Quantity on hand</label><input type="number" id="inv-qty" placeholder="e.g. 25" min="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Vendor / Source</label><input type="text" id="inv-vendor" placeholder="e.g. Baker Creek"/></div>
+      <div class="form-group"><label>Date purchased</label><input type="date" id="inv-date"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Seed viable until (year)</label><input type="number" id="inv-viable" placeholder="e.g. 2027" min="2024" max="2040"/></div>
+      <div class="form-group"><label>Status</label>
+        <select id="inv-status"><option>In Stock</option><option>Low</option><option>Depleted</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="inv-notes" placeholder="Storage location, germination rate, special notes…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('inv')">Cancel</button>
+      <button class="btn-save" onclick="saveInv()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHOPPING MODAL -->
+<div class="overlay" id="modal-shop">
+  <div class="modal">
+    <h3 id="shop-modal-title">Add shopping item</h3>
+    <input type="hidden" id="shop-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Item name *</label><input type="text" id="shop-name" placeholder="e.g. Brandywine Tomato seeds"/></div>
+      <div class="form-group"><label>Type</label>
+        <select id="shop-type"><option>Seed</option><option>Transplant</option><option>Bulb / Root</option><option>Supply</option><option>Tool</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Quantity needed</label><input type="text" id="shop-qty" placeholder="e.g. 2 packets"/></div>
+      <div class="form-group"><label>Preferred vendor</label><input type="text" id="shop-vendor" placeholder="e.g. Johnny's Seeds"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Estimated cost ($)</label><input type="number" id="shop-cost" placeholder="0.00" min="0" step="0.01"/></div>
+      <div class="form-group"><label>Priority</label>
+        <select id="shop-pri"><option>High</option><option>Medium</option><option>Low</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="shop-notes" placeholder="Link, catalog number, alternative brands…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('shop')">Cancel</button>
+      <button class="btn-save" onclick="saveShop()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLANTING MODAL -->
+<div class="overlay" id="modal-plant">
+  <div class="modal">
+    <h3 id="plant-modal-title">Log a planting</h3>
+    <input type="hidden" id="plant-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Plant name *</label><input type="text" id="plant-name" placeholder="e.g. Tomato"/></div>
+      <div class="form-group"><label>Variety</label><input type="text" id="plant-variety" placeholder="e.g. Sun Gold"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Bed name</label>
+        <input type="text" id="plant-bed" placeholder="e.g. Raised Bed A" list="bed-suggestions"/>
+        <datalist id="bed-suggestions"></datalist>
+      </div>
+      <div class="form-group"><label>Date planted *</label><input type="date" id="plant-date"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Method</label>
+        <select id="plant-method"><option>Direct Sow</option><option>Transplant</option><option>Cutting</option><option>Division</option><option>Bulb</option></select>
+      </div>
+      <div class="form-group"><label>Quantity planted</label><input type="number" id="plant-qty" placeholder="e.g. 6" min="1"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Germination date</label><input type="date" id="plant-germ"/></div>
+      <div class="form-group"><label>Success rating</label>
+        <select id="plant-success"><option value="">— not yet —</option><option>Excellent</option><option>Great</option><option>Good</option><option>Fair</option><option>Poor</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="plant-notes" placeholder="Soil prep, spacing, weather conditions, pest issues…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('plant')">Cancel</button>
+      <button class="btn-save" onclick="savePlant()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- HARVEST MODAL -->
+<div class="overlay" id="modal-harv">
+  <div class="modal">
+    <h3 id="harv-modal-title">Log a harvest</h3>
+    <input type="hidden" id="harv-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Plant name *</label><input type="text" id="harv-name" placeholder="e.g. Zucchini"/></div>
+      <div class="form-group"><label>Variety</label><input type="text" id="harv-variety" placeholder="e.g. Black Beauty"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Bed name</label>
+        <input type="text" id="harv-bed" placeholder="e.g. Raised Bed A" list="bed-suggestions"/>
+      </div>
+      <div class="form-group"><label>Date harvested *</label><input type="date" id="harv-date"/></div>
+    </div>
+    <div class="form-group"><label>Quantity type</label>
+      <div class="qty-toggle">
+        <button id="qty-weight-btn" class="active" onclick="setQtyType('weight')">⚖ Weight</button>
+        <button id="qty-count-btn" onclick="setQtyType('count')">🔢 Count</button>
+      </div>
+    </div>
+    <div class="form-row" id="qty-weight-row">
+      <div class="form-group"><label>Pounds</label><input type="number" id="harv-lbs" placeholder="0" min="0" step="0.1"/></div>
+      <div class="form-group"><label>Ounces</label><input type="number" id="harv-oz" placeholder="0" min="0" max="15" step="0.5"/></div>
+    </div>
+    <div class="form-row" id="qty-count-row" style="display:none">
+      <div class="form-group"><label>Count</label><input type="number" id="harv-count" placeholder="e.g. 12" min="0"/></div>
+      <div class="form-group"><label>Unit</label>
+        <select id="harv-unit"><option>heads</option><option>ears</option><option>bunches</option><option>fruits</option><option>pods</option><option>bulbs</option><option>pieces</option><option>other</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Quality rating</label>
+        <select id="harv-quality"><option value="">— not rated —</option><option>Excellent</option><option>Great</option><option>Good</option><option>Fair</option><option>Poor</option></select>
+      </div>
+      <div class="form-group"><label>&nbsp;</label><div style="font-size:11px;color:var(--text-muted);padding-top:10px;">Toggle weight or count above</div></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="harv-notes" placeholder="Flavor, appearance, pest damage, preservation method…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('harv')">Cancel</button>
+      <button class="btn-save" onclick="saveHarv()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPLIES MODAL -->
+<div class="overlay" id="modal-sup">
+  <div class="modal">
+    <h3 id="sup-modal-title">Add supply item</h3>
+    <input type="hidden" id="sup-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Item name *</label><input type="text" id="sup-name" placeholder="e.g. Organic compost"/></div>
+      <div class="form-group"><label>Category</label>
+        <select id="sup-cat"><option>Soil & Amendments</option><option>Fertilizer</option><option>Pest & Disease</option><option>Tools</option><option>Containers & Structures</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Quantity on hand</label><input type="number" id="sup-qty" placeholder="e.g. 3" min="0" step="0.5"/></div>
+      <div class="form-group"><label>Unit</label>
+        <select id="sup-unit"><option>bags</option><option>lbs</option><option>gallons</option><option>quarts</option><option>oz</option><option>bottles</option><option>boxes</option><option>each</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Reorder when below</label><input type="number" id="sup-reorder" placeholder="e.g. 1" min="0" step="0.5"/></div>
+      <div class="form-group"><label>Vendor</label><input type="text" id="sup-vendor" placeholder="e.g. Tractor Supply"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date purchased</label><input type="date" id="sup-date"/></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="sup-notes" placeholder="Brand, application rate, storage location…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('sup')">Cancel</button>
+      <button class="btn-save" onclick="saveSup()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────
+const SEASONS=[2024,2025,2026,2027,2028];
+let currentSeason=new Date().getFullYear();
+let gardenBeds=[];
+let qtyType='weight';
+
+// Data keyed by season
+let D={};
+function sd(){return D[currentSeason]||(D[currentSeason]={inv:[],shopping:[],planting:[],harvest:[],supplies:[]});}
+function uid(){return Date.now()+'-'+Math.random().toString(36).slice(2,7);}
+
+// ── Seasons ───────────────────────────────────────────────────────────
+function initSeasons(){
+  const sel=document.getElementById('seasonSelect');
+  sel.innerHTML=SEASONS.map(y=>`<option value="${y}" ${y===currentSeason?'selected':''}>${y} Season</option>`).join('');
+}
+function switchSeason(){
+  currentSeason=parseInt(document.getElementById('seasonSelect').value);
+  renderAll();
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='dashboard')renderDashboard();
+}
+
+// ── Modals ────────────────────────────────────────────────────────────
+function openModal(type,id){
+  clearModal(type);
+  if(id){
+    document.getElementById(`${type}-modal-title`).textContent=
+      {inv:'Edit inventory item',shop:'Edit shopping item',plant:'Edit planting record',harv:'Edit harvest record',sup:'Edit supply item'}[type];
+    document.getElementById(`${type}-edit-id`).value=id;
+    const key={inv:'inv',shop:'shopping',plant:'planting',harv:'harvest',sup:'supplies'}[type];
+    const rec=sd()[key].find(r=>r.id===id);
+    if(rec)populateModal(type,rec);
+  } else {
+    document.getElementById(`${type}-modal-title`).textContent=
+      {inv:'Add seed / plant',shop:'Add shopping item',plant:'Log a planting',harv:'Log a harvest',sup:'Add supply item'}[type];
+  }
+  updateBedSuggestions();
+  document.getElementById('modal-'+type).classList.add('open');
+}
+function closeModal(type){document.getElementById('modal-'+type).classList.remove('open');}
+function clearModal(t){
+  document.getElementById('modal-'+t).querySelectorAll('input,select,textarea').forEach(el=>{
+    if(el.type==='hidden')return;
+    if(el.tagName==='SELECT')el.selectedIndex=0;
+    else el.value='';
+  });
+  if(t==='harv'){setQtyType('weight');}
+}
+function populateModal(t,r){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;};
+  if(t==='inv'){set('inv-name',r.name);set('inv-variety',r.variety);set('inv-cat',r.cat);set('inv-qty',r.qty);set('inv-vendor',r.vendor);set('inv-date',r.date);set('inv-viable',r.viable);set('inv-status',r.status);set('inv-notes',r.notes);}
+  if(t==='shop'){set('shop-name',r.name);set('shop-type',r.type);set('shop-qty',r.qty);set('shop-vendor',r.vendor);set('shop-cost',r.cost);set('shop-pri',r.priority);set('shop-notes',r.notes);}
+  if(t==='plant'){set('plant-name',r.name);set('plant-variety',r.variety);set('plant-bed',r.bed);set('plant-date',r.date);set('plant-method',r.method);set('plant-qty',r.qty);set('plant-germ',r.germ);set('plant-success',r.success);set('plant-notes',r.notes);}
+  if(t==='harv'){
+    set('harv-name',r.name);set('harv-variety',r.variety);set('harv-bed',r.bed);set('harv-date',r.date);set('harv-quality',r.quality);set('harv-notes',r.notes);
+    setQtyType(r.qtyType||'weight');
+    if(r.qtyType==='weight'){set('harv-lbs',r.lbs);set('harv-oz',r.oz);}
+    else{set('harv-count',r.count);set('harv-unit',r.unit);}
+  }
+  if(t==='sup'){set('sup-name',r.name);set('sup-cat',r.cat);set('sup-qty',r.qty);set('sup-unit',r.unit);set('sup-reorder',r.reorder);set('sup-vendor',r.vendor);set('sup-date',r.date);set('sup-notes',r.notes);}
+}
+['inv','shop','plant','harv','sup'].forEach(t=>{
+  document.getElementById('modal-'+t).addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal(t);});
+});
+
+function g(id){return document.getElementById(id)?.value?.trim()||'';}
+
+// ── Inventory ─────────────────────────────────────────────────────────
+function saveInv(){
+  if(!g('inv-name')){alert('Plant name is required.');return;}
+  const id=g('inv-edit-id')||uid();
+  const rec={id,name:g('inv-name'),variety:g('inv-variety'),cat:g('inv-cat'),qty:g('inv-qty'),vendor:g('inv-vendor'),date:g('inv-date'),viable:g('inv-viable'),status:g('inv-status'),notes:g('inv-notes')};
+  const arr=sd().inv;
+  const i=arr.findIndex(r=>r.id===id);
+  if(i>=0)arr[i]=rec;else arr.push(rec);
+  closeModal('inv');renderInventory();
+}
+function renderInventory(){
+  const q=g('inv-search').toLowerCase();
+  const fc=document.getElementById('inv-filter-cat').value;
+  const fs=document.getElementById('inv-filter-status').value;
+  let rows=sd().inv.filter(r=>
+    (!q||(r.name+r.variety+r.vendor).toLowerCase().includes(q))&&
+    (!fc||r.cat===fc)&&(!fs||r.status===fs)
+  );
+  const tbody=document.getElementById('inv-body');
+  document.getElementById('inv-count').textContent=`${rows.length} item${rows.length!==1?'s':''}`;
+  if(!rows.length){tbody.innerHTML='';document.getElementById('inv-empty').style.display='block';return;}
+  document.getElementById('inv-empty').style.display='none';
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td><b>${r.name}</b>${r.variety?`<br><span style="font-size:11px;color:var(--text-muted)">${r.variety}</span>`:''}</td>
+    <td>${r.cat||'—'}</td>
+    <td>${r.qty||'—'}</td>
+    <td>${r.vendor||'—'}</td>
+    <td>${fmtDate(r.date)}</td>
+    <td>${r.viable||'—'}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td style="font-size:11px;max-width:140px">${r.notes||'—'}</td>
+    <td><div class="td-actions">
+      <button class="act-btn" onclick="openModal('inv','${r.id}')">✏</button>
+      <button class="act-btn" onclick="moveToShopping('${r.id}')">🛒</button>
+      <button class="act-btn red" onclick="deleteRec('inv','${r.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+function statusBadge(s){
+  if(s==='In Stock')return`<span class="badge badge-green">In Stock</span>`;
+  if(s==='Low')return`<span class="badge badge-yellow">Low</span>`;
+  if(s==='Depleted')return`<span class="badge badge-red">Depleted</span>`;
+  return s||'—';
+}
+function moveToShopping(id){
+  const r=sd().inv.find(x=>x.id===id);if(!r)return;
+  sd().shopping.push({id:uid(),name:r.name+(r.variety?' - '+r.variety:''),type:'Seed',qty:'',vendor:r.vendor,cost:'',priority:'Medium',notes:''});
+  renderShopping();
+  switchTab('shopping');
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{if(i===1)b.classList.add('active');else b.classList.remove('active');});
+}
+
+// ── Shopping ──────────────────────────────────────────────────────────
+function saveShop(){
+  if(!g('shop-name')){alert('Item name is required.');return;}
+  const id=g('shop-edit-id')||uid();
+  const rec={id,name:g('shop-name'),type:g('shop-type'),qty:g('shop-qty'),vendor:g('shop-vendor'),cost:g('shop-cost'),priority:g('shop-pri'),notes:g('shop-notes')};
+  const arr=sd().shopping;const i=arr.findIndex(r=>r.id===id);
+  if(i>=0)arr[i]=rec;else arr.push(rec);
+  closeModal('shop');renderShopping();
+}
+function gotIt(id){
+  const r=sd().shopping.find(x=>x.id===id);if(!r)return;
+  sd().inv.push({id:uid(),name:r.name,variety:'',cat:'Vegetable',qty:'1',vendor:r.vendor,date:new Date().toISOString().split('T')[0],viable:'',status:'In Stock',notes:'Added from shopping list'});
+  sd().shopping=sd().shopping.filter(x=>x.id!==id);
+  renderShopping();renderInventory();
+  showToast('✓ Moved to inventory!');
+}
+function renderShopping(){
+  const fp=document.getElementById('shop-filter-pri').value;
+  let rows=sd().shopping.filter(r=>!fp||r.priority===fp);
+  const total=rows.reduce((s,r)=>s+(parseFloat(r.cost)||0),0);
+  document.getElementById('shop-total').textContent=total>0?`Est. total: $${total.toFixed(2)}`:`${rows.length} item${rows.length!==1?'s':''}`;
+  const tbody=document.getElementById('shop-body');
+  if(!rows.length){tbody.innerHTML='';document.getElementById('shop-empty').style.display='block';return;}
+  document.getElementById('shop-empty').style.display='none';
+  const priColor={High:'badge-red',Medium:'badge-yellow',Low:'badge-gray'};
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td><b>${r.name}</b></td>
+    <td>${r.type||'—'}</td>
+    <td>${r.qty||'—'}</td>
+    <td>${r.vendor||'—'}</td>
+    <td>${r.cost?'$'+parseFloat(r.cost).toFixed(2):'—'}</td>
+    <td><span class="badge ${priColor[r.priority]||'badge-gray'}">${r.priority||'—'}</span></td>
+    <td style="font-size:11px;max-width:130px">${r.notes||'—'}</td>
+    <td><div class="td-actions">
+      <button class="act-btn green" onclick="gotIt('${r.id}')">✓ Got it!</button>
+      <button class="act-btn" onclick="openModal('shop','${r.id}')">✏</button>
+      <button class="act-btn red" onclick="deleteRec('shopping','${r.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+// ── Planting Log ──────────────────────────────────────────────────────
+function savePlant(){
+  if(!g('plant-name')||!g('plant-date')){alert('Plant name and date are required.');return;}
+  const id=g('plant-edit-id')||uid();
+  const rec={id,name:g('plant-name'),variety:g('plant-variety'),bed:g('plant-bed'),date:g('plant-date'),method:g('plant-method'),qty:g('plant-qty'),germ:g('plant-germ'),success:g('plant-success'),notes:g('plant-notes')};
+  const arr=sd().planting;const i=arr.findIndex(r=>r.id===id);
+  if(i>=0)arr[i]=rec;else arr.push(rec);
+  updateBeds(rec.bed);closeModal('plant');renderPlanting();
+}
+function renderPlanting(){
+  const fb=document.getElementById('plant-filter-bed').value;
+  const fm=document.getElementById('plant-filter-month').value;
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let rows=sd().planting.filter(r=>{
+    const bedOk=!fb||r.bed===fb;
+    const mOk=!fm||MONTHS[new Date(r.date+'T12:00').getMonth()]===fm;
+    return bedOk&&mOk;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('plant-count').textContent=`${rows.length} record${rows.length!==1?'s':''}`;
+  const tbody=document.getElementById('plant-body');
+  if(!rows.length){tbody.innerHTML='';document.getElementById('plant-empty').style.display='block';return;}
+  document.getElementById('plant-empty').style.display='none';
+  tbody.innerHTML=rows.map(r=>{
+    const germDays=r.germ&&r.date?Math.round((new Date(r.germ)-new Date(r.date))/(1000*60*60*24)):null;
+    return`<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td><b>${r.name}</b></td>
+      <td>${r.variety||'—'}</td>
+      <td>${r.bed?`<span class="badge badge-green">${r.bed}</span>`:'—'}</td>
+      <td>${r.method||'—'}</td>
+      <td>${r.qty||'—'}</td>
+      <td>${r.germ?fmtDate(r.germ)+(germDays!==null?`<br><span style="font-size:10px;color:var(--text-muted)">${germDays}d to sprout</span>`:''):'—'}</td>
+      <td><span class="rating-${r.success}">${r.success||'—'}</span></td>
+      <td style="font-size:11px;max-width:130px">${r.notes||'—'}</td>
+      <td><div class="td-actions">
+        <button class="act-btn" onclick="openModal('plant','${r.id}')">✏</button>
+        <button class="act-btn red" onclick="deleteRec('planting','${r.id}')">🗑</button>
+      </div></td>
+    </tr>`;}).join('');
+}
+
+// ── Harvest Log ───────────────────────────────────────────────────────
+function setQtyType(t){
+  qtyType=t;
+  document.getElementById('qty-weight-btn').classList.toggle('active',t==='weight');
+  document.getElementById('qty-count-btn').classList.toggle('active',t==='count');
+  document.getElementById('qty-weight-row').style.display=t==='weight'?'grid':'none';
+  document.getElementById('qty-count-row').style.display=t==='count'?'grid':'none';
+}
+function saveHarv(){
+  if(!g('harv-name')||!g('harv-date')){alert('Plant name and date are required.');return;}
+  const id=g('harv-edit-id')||uid();
+  const rec={id,name:g('harv-name'),variety:g('harv-variety'),bed:g('harv-bed'),date:g('harv-date'),qtyType,quality:g('harv-quality'),notes:g('harv-notes')};
+  if(qtyType==='weight'){rec.lbs=g('harv-lbs');rec.oz=g('harv-oz');}
+  else{rec.count=g('harv-count');rec.unit=g('harv-unit');}
+  const arr=sd().harvest;const i=arr.findIndex(r=>r.id===id);
+  if(i>=0)arr[i]=rec;else arr.push(rec);
+  updateBeds(rec.bed);closeModal('harv');renderHarvest();updateHarvPlantFilter();
+}
+function fmtHarvQty(r){
+  if(r.qtyType==='count')return`${r.count||0} ${r.unit||''}`;
+  const lbs=parseFloat(r.lbs||0),oz=parseFloat(r.oz||0);
+  if(!lbs&&!oz)return'—';
+  return lbs?`${lbs} lbs ${oz?oz+' oz':''}`.trim():`${oz} oz`;
+}
+function renderHarvest(){
+  const fp=document.getElementById('harv-filter-plant').value;
+  const fm=document.getElementById('harv-filter-month').value;
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let rows=sd().harvest.filter(r=>{
+    const pOk=!fp||r.name===fp;
+    const mOk=!fm||MONTHS[new Date(r.date+'T12:00').getMonth()]===fm;
+    return pOk&&mOk;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+  // total weight
+  let totalLbs=0;
+  sd().harvest.forEach(r=>{if(r.qtyType==='weight'){totalLbs+=parseFloat(r.lbs||0)+(parseFloat(r.oz||0)/16);}});
+  document.getElementById('harv-total').textContent=totalLbs>0?`Season total: ${totalLbs.toFixed(1)} lbs`:`${rows.length} record${rows.length!==1?'s':''}`;
+  const tbody=document.getElementById('harv-body');
+  if(!rows.length){tbody.innerHTML='';document.getElementById('harv-empty').style.display='block';return;}
+  document.getElementById('harv-empty').style.display='none';
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><b>${r.name}</b></td>
+    <td>${r.variety||'—'}</td>
+    <td>${r.bed?`<span class="badge badge-green">${r.bed}</span>`:'—'}</td>
+    <td>${fmtHarvQty(r)}</td>
+    <td><span class="rating-${r.quality}">${r.quality||'—'}</span></td>
+    <td style="font-size:11px;max-width:140px">${r.notes||'—'}</td>
+    <td><div class="td-actions">
+      <button class="act-btn" onclick="openModal('harv','${r.id}')">✏</button>
+      <button class="act-btn red" onclick="deleteRec('harvest','${r.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+function updateHarvPlantFilter(){
+  const names=[...new Set(sd().harvest.map(r=>r.name))].sort();
+  const sel=document.getElementById('harv-filter-plant');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All plants</option>'+names.map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join('');
+}
+
+// ── Supplies ──────────────────────────────────────────────────────────
+function saveSup(){
+  if(!g('sup-name')){alert('Item name is required.');return;}
+  const id=g('sup-edit-id')||uid();
+  const rec={id,name:g('sup-name'),cat:g('sup-cat'),qty:g('sup-qty'),unit:g('sup-unit'),reorder:g('sup-reorder'),vendor:g('sup-vendor'),date:g('sup-date'),notes:g('sup-notes')};
+  const arr=sd().supplies;const i=arr.findIndex(r=>r.id===id);
+  if(i>=0)arr[i]=rec;else arr.push(rec);
+  closeModal('sup');renderSupplies();
+}
+function renderSupplies(){
+  const fc=document.getElementById('sup-filter-cat').value;
+  let rows=sd().supplies.filter(r=>!fc||r.cat===fc);
+  document.getElementById('sup-count').textContent=`${rows.length} item${rows.length!==1?'s':''}`;
+  const tbody=document.getElementById('sup-body');
+  if(!rows.length){tbody.innerHTML='';document.getElementById('sup-empty').style.display='block';return;}
+  document.getElementById('sup-empty').style.display='none';
+  tbody.innerHTML=rows.map(r=>{
+    const needsReorder=r.reorder&&parseFloat(r.qty||0)<=parseFloat(r.reorder||0);
+    return`<tr>
+      <td><b>${r.name}</b>${needsReorder?' <span class="badge badge-red">Reorder</span>':''}</td>
+      <td>${r.cat||'—'}</td>
+      <td style="${needsReorder?'color:var(--red);font-weight:600':''}">${r.qty||'—'}</td>
+      <td>${r.unit||'—'}</td>
+      <td>${r.reorder||'—'}</td>
+      <td>${r.vendor||'—'}</td>
+      <td>${fmtDate(r.date)}</td>
+      <td style="font-size:11px;max-width:120px">${r.notes||'—'}</td>
+      <td><div class="td-actions">
+        <button class="act-btn" onclick="openModal('sup','${r.id}')">✏</button>
+        <button class="act-btn" onclick="supToShop('${r.id}')">🛒</button>
+        <button class="act-btn red" onclick="deleteRec('supplies','${r.id}')">🗑</button>
+      </div></td>
+    </tr>`;}).join('');
+}
+function supToShop(id){
+  const r=sd().supplies.find(x=>x.id===id);if(!r)return;
+  sd().shopping.push({id:uid(),name:r.name,type:'Supply',qty:'',vendor:r.vendor,cost:'',priority:'Medium',notes:''});
+  renderShopping();showToast('Added to shopping list!');
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────
+function renderDashboard(){
+  const data=sd();
+  const totalVarieties=new Set([...data.planting.map(r=>r.name),...data.harvest.map(r=>r.name)]).size;
+  const totalBeds=new Set([...data.planting.map(r=>r.bed),...data.harvest.map(r=>r.bed)].filter(Boolean)).size;
+  const totalHarvestLbs=data.harvest.reduce((s,r)=>r.qtyType==='weight'?s+parseFloat(r.lbs||0)+(parseFloat(r.oz||0)/16):s,0);
+  const totalPlantings=data.planting.length;
+  const totalHarvests=data.harvest.length;
+  const shoppingCount=data.shopping.length;
+  const reorderItems=data.supplies.filter(r=>r.reorder&&parseFloat(r.qty||0)<=parseFloat(r.reorder||0));
+  // Harvest by plant
+  const byPlant={};
+  data.harvest.forEach(r=>{
+    if(!byPlant[r.name])byPlant[r.name]={lbs:0,count:0,entries:0};
+    byPlant[r.name].entries++;
+    if(r.qtyType==='weight')byPlant[r.name].lbs+=parseFloat(r.lbs||0)+(parseFloat(r.oz||0)/16);
+    else byPlant[r.name].count+=parseFloat(r.count||0);
+  });
+  const topPlants=Object.entries(byPlant).sort((a,b)=>b[1].lbs-a[1].lbs||b[1].entries-a[1].entries).slice(0,8);
+  const maxLbs=topPlants.length?Math.max(...topPlants.map(([,v])=>v.lbs||v.entries)):1;
+  // Best/worst performers from planting
+  const ratings={Excellent:5,Great:4,Good:3,Fair:2,Poor:1};
+  const perfMap={};
+  data.planting.filter(r=>r.success).forEach(r=>{
+    if(!perfMap[r.name])perfMap[r.name]=[];
+    perfMap[r.name].push(ratings[r.success]||0);
+  });
+  const performers=Object.entries(perfMap).map(([n,arr])=>({name:n,avg:arr.reduce((a,b)=>a+b)/arr.length})).sort((a,b)=>b.avg-a.avg);
+  const best=performers.slice(0,3);const worst=performers.slice(-3).reverse();
+  // First/last harvest dates
+  const harvDates=data.harvest.map(r=>r.date).filter(Boolean).sort();
+  const firstHarv=harvDates[0];const lastHarv=harvDates[harvDates.length-1];
+
+  document.getElementById('dash-content').innerHTML=`
+    <div style="font-family:var(--font-display);font-size:18px;color:var(--sage-deeper);margin-bottom:14px;">${currentSeason} Season Overview</div>
+    <div class="dash-grid">
+      <div class="dash-card"><div class="dc-label">Varieties planted</div><div class="dc-val">${totalVarieties}</div><div class="dc-sub">across ${totalBeds} bed${totalBeds!==1?'s':''}</div></div>
+      <div class="dash-card"><div class="dc-label">Planting records</div><div class="dc-val">${totalPlantings}</div><div class="dc-sub">logged this season</div></div>
+      <div class="dash-card"><div class="dc-label">Harvest records</div><div class="dc-val">${totalHarvests}</div><div class="dc-sub">${totalHarvestLbs>0?totalHarvestLbs.toFixed(1)+' lbs total':'logged this season'}</div></div>
+      <div class="dash-card"><div class="dc-label">Shopping list</div><div class="dc-val">${shoppingCount}</div><div class="dc-sub">item${shoppingCount!==1?'s':''} needed</div></div>
+      <div class="dash-card"><div class="dc-label">Reorder alerts</div><div class="dc-val" style="${reorderItems.length?'color:var(--red)':''}">${reorderItems.length}</div><div class="dc-sub">supply item${reorderItems.length!==1?'s':''} low</div></div>
+      <div class="dash-card"><div class="dc-label">Season span</div><div class="dc-val" style="font-size:14px;padding-top:4px">${firstHarv?fmtDate(firstHarv):'—'}</div><div class="dc-sub">to ${lastHarv?fmtDate(lastHarv):'—'}</div></div>
+    </div>
+    ${topPlants.length?`
+    <div class="dash-section">
+      <h3>🌾 Harvest by plant</h3>
+      ${topPlants.map(([name,v])=>{
+        const val=v.lbs||v.entries;const pct=maxLbs?Math.round((val/maxLbs)*100):0;
+        const label=v.lbs?v.lbs.toFixed(1)+' lbs':v.entries+' harvest'+( v.entries!==1?'s':'');
+        return`<div class="bar-row"><div class="bar-label">${name}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-val">${label}</div></div>`;
+      }).join('')}
+    </div>`:''}
+    ${best.length?`
+    <div class="dash-section">
+      <h3>⭐ Performance ratings</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><div style="font-size:11px;font-weight:600;color:var(--sage-dark);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em;">Top performers</div>
+        ${best.map(p=>`<div class="needs-row"><span style="flex:1">${p.name}</span><span class="rating-${avgRatingLabel(p.avg)}">${avgRatingLabel(p.avg)}</span></div>`).join('')}</div>
+        ${worst.length&&worst[0].avg<3?`<div><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em;">Needs improvement</div>
+        ${worst.filter(p=>p.avg<3).map(p=>`<div class="needs-row"><span style="flex:1">${p.name}</span><span class="rating-${avgRatingLabel(p.avg)}">${avgRatingLabel(p.avg)}</span></div>`).join('')}</div>`:'<div></div>'}
+      </div>
+    </div>`:''}
+    ${reorderItems.length?`
+    <div class="dash-section">
+      <h3>⚠ Supplies needing reorder</h3>
+      ${reorderItems.map(r=>`<div class="dash-alert"><span class="dash-alert-icon">📦</span><span><b>${r.name}</b> — ${r.qty||0} ${r.unit||''} on hand (reorder at ${r.reorder})</span></div>`).join('')}
+    </div>`:''}
+    ${!totalVarieties&&!totalPlantings?`<div class="empty-state"><div class="es-icon">📊</div><p>Your dashboard will fill in as you add planting and harvest records.<br>Start by logging what you've planted this season!</p></div>`:''}
+  `;
+}
+function avgRatingLabel(avg){
+  if(avg>=4.5)return'Excellent';if(avg>=3.5)return'Great';if(avg>=2.5)return'Good';if(avg>=1.5)return'Fair';return'Poor';
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────
+function deleteRec(key,id){
+  if(!confirm('Delete this record?'))return;
+  sd()[key]=sd()[key].filter(r=>r.id!==id);
+  renderAll();
+}
+function fmtDate(d){
+  if(!d)return'—';
+  try{const dt=new Date(d+'T12:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+  catch(e){return d;}
+}
+function updateBeds(bed){
+  if(bed&&!gardenBeds.includes(bed))gardenBeds.push(bed);
+  updateBedSuggestions();updateBedFilter();
+}
+function updateBedSuggestions(){
+  const dl=document.getElementById('bed-suggestions');
+  if(dl)dl.innerHTML=gardenBeds.map(b=>`<option value="${b}"></option>`).join('');
+}
+function updateBedFilter(){
+  ['plant-filter-bed'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">All beds</option>'+gardenBeds.map(b=>`<option ${b===cur?'selected':''}>${b}</option>`).join('');
+  });
+}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--sage-deeper);color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+  t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+function renderAll(){
+  renderInventory();renderShopping();renderPlanting();renderHarvest();renderSupplies();updateHarvPlantFilter();updateBedFilter();
+}
+
+// ── Import from Planner ───────────────────────────────────────────────
+function importFromPlanner(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.gardenName)document.getElementById('gardenName').value=d.gardenName;
+      // Extract bed names
+      if(d.beds)d.beds.forEach(b=>{if(b.name&&!gardenBeds.includes(b.name))gardenBeds.push(b.name);});
+      // Extract plants from all beds
+      const plantNames=new Set();
+      if(d.grids)Object.values(d.grids).forEach(g=>Object.values(g).forEach(id=>{
+        const name=id.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+        plantNames.add(name);
+      }));
+      // Add unique plants to shopping list as suggestions
+      let added=0;
+      plantNames.forEach(name=>{
+        if(!sd().shopping.find(r=>r.name.toLowerCase()===name.toLowerCase())){
+          sd().shopping.push({id:uid(),name,type:'Seed',qty:'',vendor:'',cost:'',priority:'Medium',notes:'Imported from Garden Planner'});
+          added++;
+        }
+      });
+      updateBedSuggestions();updateBedFilter();renderShopping();
+      showToast(`✓ Imported! ${gardenBeds.length} beds, ${added} plants added to shopping list.`);
+    }catch(err){alert('Could not read that file. Make sure it\'s a Garden Planner export (.json).');}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ── Save / Load / Export / Import ─────────────────────────────────────
+function getState(){return{gardenName:document.getElementById('gardenName').value,currentSeason,gardenBeds,D};}
+function applyState(s){
+  if(s.gardenName)document.getElementById('gardenName').value=s.gardenName;
+  if(s.currentSeason)currentSeason=s.currentSeason;
+  if(s.gardenBeds)gardenBeds=s.gardenBeds;
+  if(s.D)D=s.D;
+  document.getElementById('seasonSelect').value=currentSeason;
+  renderAll();
+}
+function saveData(){localStorage.setItem('msl_tracker_v1',JSON.stringify(getState()));showToast('✓ Saved to browser!');}
+function loadData(){
+  const raw=localStorage.getItem('msl_tracker_v1');
+  if(!raw){showToast('No saved data found. Use Import for a .json file.');return;}
+  try{applyState(JSON.parse(raw));showToast('✓ Loaded!');}
+  catch(e){showToast('Could not load saved data.');}
+}
+function exportData(){
+  const name=(document.getElementById('gardenName').value||'my-garden').replace(/\s+/g,'-').toLowerCase();
+  const blob=new Blob([JSON.stringify(getState(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`${name}-tracker-${currentSeason}.json`;a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Exported!');
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{applyState(JSON.parse(ev.target.result));showToast('✓ Tracker data imported!');}
+    catch(err){showToast('Could not read that file.');}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+initSeasons();
+renderAll();
+</script>
+</body>
+</html>
